@@ -5,6 +5,8 @@ import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import BookingPage from './pages/BookingPage';
 import AdminDashboard from './pages/AdminDashboard';
+import AIAssistant from './pages/AIAssistant';
+import DoctorCalendar from './pages/DoctorCalendar';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -32,6 +34,14 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/ai-assistant"
+          element={
+            <ProtectedRoute role="patient">
+              <AIAssistant />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Doctor Routes */}
         <Route
@@ -39,6 +49,14 @@ function App() {
           element={
             <ProtectedRoute role="doctor">
               <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/calendar"
+          element={
+            <ProtectedRoute role="doctor">
+              <DoctorCalendar />
             </ProtectedRoute>
           }
         />

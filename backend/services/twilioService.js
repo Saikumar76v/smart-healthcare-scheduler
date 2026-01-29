@@ -32,27 +32,75 @@ const sendSMS = async (to, body) => {
 };
 
 const notifyPatientBooking = async (phone, patientName, date, time) => {
-    if (!phone) return;
+    console.log(`[SMS] Attempting to notify patient booking - Phone: ${phone}, Patient: ${patientName}`);
+    if (!phone) {
+        console.warn('[SMS] Patient phone number missing - skipping notification');
+        return;
+    }
     const message = `Halo ${patientName}, Appointment booked successfully. Date: ${date} at ${time}. Status: Pending.`;
     await sendSMS(phone, message);
 };
 
 const notifyDoctorNewRequest = async (phone, patientName, date, time) => {
-    if (!phone) return;
+    console.log(`[SMS] Attempting to notify doctor new request - Phone: ${phone}, Patient: ${patientName}`);
+    if (!phone) {
+        console.warn('[SMS] Doctor phone number missing - skipping notification');
+        return;
+    }
     const message = `New appointment request received from ${patientName} for ${date} at ${time}.`;
     await sendSMS(phone, message);
 };
 
 const notifyApproval = async (phone, patientName, doctorName, date, time) => {
-    if (!phone) return;
+    console.log(`[SMS] Attempting to notify approval - Phone: ${phone}, Patient: ${patientName}, Doctor: ${doctorName}`);
+    if (!phone) {
+        console.warn('[SMS] Patient phone number missing - skipping approval notification');
+        return;
+    }
     const message = `Hello ${patientName}, Your appointment on ${date} at ${time} has been APPROVED by Dr. ${doctorName}.`;
     await sendSMS(phone, message);
 };
 
 const notifyRejection = async (phone, patientName, doctorName, date, time) => {
-    if (!phone) return;
+    console.log(`[SMS] Attempting to notify rejection - Phone: ${phone}, Patient: ${patientName}, Doctor: ${doctorName}`);
+    if (!phone) {
+        console.warn('[SMS] Patient phone number missing - skipping rejection notification');
+        return;
+    }
     const message = `Hello ${patientName}, Your appointment on ${date} at ${time} has been REJECTED by Dr. ${doctorName}.`;
     await sendSMS(phone, message);
+};
+
+const notifyCancellation = async (patientPhone, patientName, doctorPhone, doctorName, date, time) => {
+    console.log(`[SMS] Notifying cancellation - Patient: ${patientName}, Doctor: ${doctorName}`);
+
+    // Notify patient
+    if (patientPhone) {
+        const patientMessage = `Your appointment with Dr. ${doctorName} on ${date} at ${time} has been cancelled.`;
+        await sendSMS(patientPhone, patientMessage);
+    }
+
+    // Notify doctor
+    if (doctorPhone) {
+        const doctorMessage = `Appointment with ${patientName} on ${date} at ${time} has been cancelled.`;
+        await sendSMS(doctorPhone, doctorMessage);
+    }
+};
+
+const notifyReschedule = async (patientPhone, patientName, doctorPhone, doctorName, oldDate, oldTime, newDate, newTime) => {
+    console.log(`[SMS] Notifying reschedule - Patient: ${patientName}, Doctor: ${doctorName}`);
+
+    // Notify patient
+    if (patientPhone) {
+        const patientMessage = `Your appointment with Dr. ${doctorName} has been rescheduled from ${oldDate} ${oldTime} to ${newDate} ${newTime}.`;
+        await sendSMS(patientPhone, patientMessage);
+    }
+
+    // Notify doctor
+    if (doctorPhone) {
+        const doctorMessage = `Appointment with ${patientName} has been rescheduled from ${oldDate} ${oldTime} to ${newDate} ${newTime}.`;
+        await sendSMS(doctorPhone, doctorMessage);
+    }
 };
 
 module.exports = {
@@ -60,5 +108,7 @@ module.exports = {
     notifyPatientBooking,
     notifyDoctorNewRequest,
     notifyApproval,
-    notifyRejection
+    notifyRejection,
+    notifyCancellation,
+    notifyReschedule
 };

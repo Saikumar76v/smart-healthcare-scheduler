@@ -19,6 +19,8 @@ const Login = () => {
 
             if (res.data.role === 'doctor') {
                 navigate('/doctor');
+            } else if (res.data.role === 'admin') {
+                navigate('/admin');
             } else {
                 navigate('/patient');
             }
@@ -28,27 +30,35 @@ const Login = () => {
     };
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-50 px-4">
-            <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
-                <div className="text-center mb-8">
-                    <h1 className="text-2xl font-bold text-gray-800">Welcome Back</h1>
-                    <p className="text-gray-500 text-sm mt-1">Sign in to your account</p>
+        <div className="flex justify-center items-center min-h-screen bg-slate-50 healthcare-gradient px-4">
+            <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border border-slate-100 ring-1 ring-slate-200">
+                {/* Header */}
+                <div className="text-center mb-10">
+                    <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 rounded-3xl mb-6 shadow-xl shadow-blue-100">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                            <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                        </svg>
+                    </div>
+                    <h1 className="text-4xl font-black text-slate-800 tracking-tight">Welcome</h1>
+                    <p className="text-slate-500 mt-2 font-semibold">Smart Healthcare Scheduler</p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-50 text-red-600 p-3 rounded-lg mb-6 text-sm border border-red-100 flex items-center">
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                    <div className="bg-rose-50 text-rose-600 p-4 rounded-2xl mb-8 text-sm border border-rose-100 flex items-center font-bold">
+                        <svg width="20" height="20" className="mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
                         {error}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label className="block text-gray-700 text-sm font-medium mb-1">Email Address</label>
+                        <label className="block text-slate-500 text-[11px] font-black uppercase tracking-widest ml-1 mb-2">Email Address</label>
                         <input
                             type="email"
-                            className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
-                            placeholder="you@example.com"
+                            className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-600 focus:bg-white transition-all outline-none text-slate-800 font-bold text-lg"
+                            placeholder="you@email.com"
                             value={formData.email}
                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                             required
@@ -56,10 +66,10 @@ const Login = () => {
                     </div>
 
                     <div>
-                        <label className="block text-gray-700 text-sm font-medium mb-1">Password</label>
+                        <label className="block text-slate-500 text-[11px] font-black uppercase tracking-widest ml-1 mb-2">Password</label>
                         <input
                             type="password"
-                            className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition outline-none"
+                            className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-50 rounded-2xl focus:ring-4 focus:ring-blue-500/5 focus:border-blue-600 focus:bg-white transition-all outline-none text-slate-800 font-bold text-lg"
                             placeholder="••••••••"
                             value={formData.password}
                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -69,17 +79,19 @@ const Login = () => {
 
                     <button
                         type="submit"
-                        className="w-full bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 transition font-medium shadow-md hover:shadow-lg transform hover:-translate-y-0.5 duration-200"
+                        className="w-full bg-blue-600 text-white px-6 py-5 rounded-2xl hover:bg-blue-700 transition-all font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-[0.98] mt-4"
                     >
                         Sign In
                     </button>
                 </form>
 
-                <div className="mt-6 text-center text-sm text-gray-600">
-                    Don't have an account?{' '}
-                    <a href="/register" className="text-blue-600 hover:text-blue-800 font-medium hover:underline">
-                        Register
-                    </a>
+                <div className="mt-10 text-center font-bold">
+                    <p className="text-sm text-slate-400">
+                        Don't have an account?{' '}
+                        <a href="/register" className="text-blue-600 hover:text-blue-800 transition-colors underline decoration-2 underline-offset-4">
+                            Register Now
+                        </a>
+                    </p>
                 </div>
             </div>
         </div>

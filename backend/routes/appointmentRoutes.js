@@ -8,7 +8,9 @@ const {
     notifyPatientBooking,
     notifyDoctorNewRequest,
     notifyApproval,
-    notifyRejection
+    notifyRejection,
+    notifyCancellation,
+    notifyReschedule
 } = require('../services/twilioService');
 
 // @desc    Book an appointment
@@ -40,19 +42,31 @@ router.post('/book', protect, async (req, res) => {
             status: 'pending'
         });
 
-        // Send SMS to Patient
         // Send SMS Notifications
+        console.log('[BOOKING] Starting SMS notifications...');
+        console.log('[BOOKING] Patient phone:', req.user.phone);
+        console.log('[BOOKING] Doctor ID:', doctorId);
+
         const dateStr = appointmentDate.toLocaleDateString();
         const doctor = await User.findById(doctorId);
 
+        console.log('[BOOKING] Doctor found:', doctor ? doctor.name : 'NOT FOUND');
+        console.log('[BOOKING] Doctor phone:', doctor?.phone);
+
         // 1. Notify Patient
         if (req.user.phone) {
+            console.log('[BOOKING] Calling notifyPatientBooking...');
             await notifyPatientBooking(req.user.phone, req.user.name, dateStr, timeSlot);
+        } else {
+            console.warn('[BOOKING] Patient phone missing - SMS not sent');
         }
 
         // 2. Notify Doctor
         if (doctor && doctor.phone) {
+            console.log('[BOOKING] Calling notifyDoctorNewRequest...');
             await notifyDoctorNewRequest(doctor.phone, req.user.name, dateStr, timeSlot);
+        } else {
+            console.warn('[BOOKING] Doctor phone missing - SMS not sent');
         }
 
         res.status(201).json(appointment);
@@ -212,18 +226,243 @@ router.put('/:id/approve', protect, async (req, res) => {
         await appointment.save();
 
         // Send SMS via Twilio after approval
+        console.log('[APPROVAL] Starting SMS notification...');
+        console.log('[APPROVAL] Appointment ID:', req.params.id);
+
         const patient = await User.findById(appointment.patientId);
+
+        console.log('[APPROVAL] Patient found:', patient ? patient.name : 'NOT FOUND');
+        console.log('[APPROVAL] Patient phone:', patient?.phone);
+
         if (patient && patient.phone) {
+            console.log('[APPROVAL] Calling sendSMS...');
             await sendSMS(
                 patient.phone,
                 `Your appointment has been approved by the doctor. Date: ${appointment.date}, Time: ${appointment.timeSlot}`
             );
+        } else {
+            console.warn('[APPROVAL] Patient or phone missing - SMS not sent');
         }
 
         res.json({
             message: 'Appointment approved successfully',
             appointment,
         });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @desc    Cancel appointment
+// @route   PUT /api/appointments/:id/cancel
+// @access  Private (Patient or Admin)
+router.put('/:id/cancel', protect, async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        }
+
+        // Only patient who booked or admin can cancel
+        if (appointment.patientId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized to cancel this appointment' });
+        }
+
+        appointment.status = 'cancelled';
+        await appointment.save();
+
+        // Send SMS notifications
+        const patient = await User.findById(appointment.patientId);
+        const doctor = await User.findById(appointment.doctorId);
+        const dateStr = new Date(appointment.date).toLocaleDateString();
+
+        await notifyCancellation(
+            patient?.phone,
+            patient?.name,
+            doctor?.phone,
+            doctor?.name,
+            dateStr,
+            appointment.timeSlot
+        );
+
+        res.json({
+            message: 'Appointment cancelled successfully',
+            appointment
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @desc    Reschedule appointment
+// @route   PUT /api/appointments/:id/reschedule
+// @access  Private (Patient or Admin)
+router.put('/:id/reschedule', protect, async (req, res) => {
+    const { newDate, newTimeSlot } = req.body;
+
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Appointment not found' });
+        }
+
+        // Only patient who booked or admin can reschedule
+        if (appointment.patientId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized to reschedule this appointment' });
+        }
+
+        const newAppointmentDate = new Date(newDate);
+
+        // Check for conflicts at new time
+        const conflict = await Appointment.findOne({
+            doctorId: appointment.doctorId,
+            date: newAppointmentDate,
+            timeSlot: newTimeSlot,
+            status: { $ne: 'cancelled' },
+            _id: { $ne: appointment._id }
+        });
+
+        if (conflict) {
+            return res.status(400).json({ message: 'New time slot already booked. Choose another time.' });
+        }
+
+        // Store old details for SMS
+        const oldDateStr = new Date(appointment.date).toLocaleDateString();
+        const oldTimeSlot = appointment.timeSlot;
+
+        // Update appointment
+        appointment.date = newAppointmentDate;
+        appointment.timeSlot = newTimeSlot;
+        await appointment.save();
+
+        // Send SMS notifications
+        const patient = await User.findById(appointment.patientId);
+        const doctor = await User.findById(appointment.doctorId);
+        const newDateStr = newAppointmentDate.toLocaleDateString();
+
+        await notifyReschedule(
+            patient?.phone,
+            patient?.name,
+            doctor?.phone,
+            doctor?.name,
+            oldDateStr,
+            oldTimeSlot,
+            newDateStr,
+            newTimeSlot
+        );
+
+        res.json({
+            message: 'Appointment rescheduled successfully',
+            appointment
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @desc    Suggest available time slot
+// @route   GET /api/appointments/suggest-slot/:doctorId
+// @access  Private
+router.get('/suggest-slot/:doctorId', protect, async (req, res) => {
+    const { doctorId } = req.params;
+    const daysToSearch = parseInt(req.query.daysToSearch) || 7;
+
+    try {
+        const availableSlots = ["09:00 AM", "10:00 AM", "11:00 AM", "02:00 PM", "04:00 PM"];
+        const startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(startDate.getTime() + daysToSearch * 24 * 60 * 60 * 1000);
+
+        // Find all booked non-cancelled appointments in date range
+        const bookedAppointments = await Appointment.find({
+            doctorId,
+            date: { $gte: startDate, $lte: endDate },
+            status: { $ne: 'cancelled' }
+        });
+
+        // Try each day
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const currentDate = new Date(d);
+
+            // Skip past dates
+            if (currentDate < new Date()) continue;
+
+            const dateStr = currentDate.toISOString().split('T')[0];
+
+            // Check each time slot
+            for (const slot of availableSlots) {
+                const isBooked = bookedAppointments.some(apt =>
+                    new Date(apt.date).toISOString().split('T')[0] === dateStr &&
+                    apt.timeSlot === slot
+                );
+
+                if (!isBooked) {
+                    // Found available slot
+                    const alternativeSlots = availableSlots.filter((s, idx) =>
+                        idx > availableSlots.indexOf(slot) && idx < availableSlots.indexOf(slot) + 3
+                    );
+
+                    return res.json({
+                        suggestedDate: dateStr,
+                        suggestedTimeSlot: slot,
+                        reason: 'Earliest available slot',
+                        alternativeSlots
+                    });
+                }
+            }
+        }
+
+        res.json({
+            suggestedDate: null,
+            suggestedTimeSlot: null,
+            reason: 'No available slots in the next ' + daysToSearch + ' days',
+            alternativeSlots: []
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @desc    Get doctor calendar (booked slots grouped by date)
+// @route   GET /api/appointments/calendar/:doctorId
+// @access  Private
+router.get('/calendar/:doctorId', protect, async (req, res) => {
+    const { doctorId } = req.params;
+    const daysAhead = parseInt(req.query.days) || 30;
+
+    try {
+        const startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(startDate.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+
+        const appointments = await Appointment.find({
+            doctorId,
+            date: { $gte: startDate, $lte: endDate }
+        }).populate('patientId', 'name email phone');
+
+        // Group by date
+        const calendar = {};
+        appointments.forEach(apt => {
+            const dateKey = new Date(apt.date).toISOString().split('T')[0];
+            if (!calendar[dateKey]) {
+                calendar[dateKey] = [];
+            }
+            calendar[dateKey].push({
+                _id: apt._id,
+                timeSlot: apt.timeSlot,
+                patientName: apt.patientId?.name || 'Unknown',
+                patientEmail: apt.patientId?.email,
+                status: apt.status
+            });
+        });
+
+        res.json(calendar);
 
     } catch (error) {
         res.status(500).json({ message: error.message });
