@@ -78,4 +78,3 @@ This final release includes a complete overhaul of the UI, advanced appointment 
 ## 🏁 Conclusion
 The Smart Healthcare Scheduler is now **feature-complete**, **visually polished**, and **production-ready**. All core requirements from the user have been met with additional professional enhancements.
 
-**QA Lead**: Antigravity AI
