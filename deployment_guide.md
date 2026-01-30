@@ -31,6 +31,7 @@ Follow these steps to take your **Smart Healthcare Scheduler** live.
    | `TWILIO_PHONE_NUMBER` | *From Twilio Console* |
    | `FRONTEND_URL` | *Your Vercel URL (Add AFTER Step 3)* |
    | `AI_PROVIDER` | `mock` (or `gemini` / `claude`) |
+   | `GEMINI_API_KEY` | *Your Google AI API Key (Optional)* |
 
 ---
 
