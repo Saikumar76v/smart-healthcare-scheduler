@@ -11,9 +11,9 @@ A full-stack, enterprise-ready healthcare management solution featuring AI-drive
 ## 🚀 Overview
 The **Smart Healthcare Appointment Scheduler** is designed to eliminate administrative friction in clinical environments. By combining **Vite/React** frontend speed with a robust **Node/Express** backend, it provides a seamless experience for Patients, Doctors, and Administrators.
 
-### 🌐 Live Deployment (Optional)
-- **Frontend**: [Vercel Link Placeholder]
-- **Backend API**: [Render Link Placeholder]
+### 🌐 Live Deployment
+- **Frontend**: [https://smart-healthcare-scheduler.vercel.app](https://smart-healthcare-scheduler.vercel.app)
+- **Backend API**: [https://smart-healthcare-scheduler.onrender.com](https://smart-healthcare-scheduler.onrender.com)
 
 ---
 
@@ -70,9 +70,9 @@ npm run dev
 ---
 
 ## 🔐 Credentials for Testing
-- **Admin**: `admin@healthcare.com` / `admin123`
-- **Demo Doctor**: `doctor@example.com` / `doctor123`
-- **Sample Patient**: Create via the registration page!
+- **Admin**: `admin@example.com` / `admin123`
+- **Demo Doctor**: `doctor@test.com` / `doctor123`
+- **Sample Patient**: `patient@test.com` / `patient123`
 
 ---
 
@@ -88,7 +88,7 @@ For detailed deep-dives, refer to:
 
 ## ✅ Final Submission Checklist
 - [x] **Runs Locally**: Backend and Frontend sync perfectly.
-- [x] **SMS Engine**: Verified Twitch logs for all booking actions.
+- [x] **SMS Engine**: Verified Twilio logs for all booking actions.
 - [x] **AI Assistant**: Triage and Slot suggestions working.
 - [x] **Security**: `.env` files gitignored; no secrets committed.
 - [x] **Dependencies**: `node_modules` removed from repo structure.
@@ -96,4 +96,4 @@ For detailed deep-dives, refer to:
 ---
 
 **Built with ❤️ for Modern Healthcare.**
-*Last Updated: January 2026*
+*Last Updated: January 31, 2026*
